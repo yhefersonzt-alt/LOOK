@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador del algoritmo LOOK · Planificación de discos</title>
+<style>
+:root{--navy:#1b3f63;--blue:#2b7bbf;--sky:#e8f2fb;--bg:#f3f6fa;--card:#fff;--ink:#1d2733;--mute:#5d6b7a;--line:#d8e2ec;--red:#d23b3b;--green:#1f9d6b;--amber:#e08a00}
+@media(prefers-color-scheme:dark){:root{--navy:#9cc7ee;--blue:#4a9be0;--sky:#18334d;--bg:#0f1822;--card:#16222f;--ink:#e6edf4;--mute:#9aabbb;--line:#2a3b4d;--red:#ff6b6b;--green:#3ccf93;--amber:#f0a935}}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:linear-gradient(135deg,#17395a,#2b7bbf);color:#fff;padding:24px 20px 62px}
+.w{max-width:1180px;margin:0 auto}
+h1{margin:0 0 4px;font-size:clamp(1.4rem,3.2vw,2.1rem)}
+header p{margin:0 0 14px;opacity:.88;max-width:70ch}
+nav{display:flex;flex-wrap:wrap;gap:6px}
+nav button{background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:7px 16px}
+nav button.on{background:#fff;color:#17395a}
+nav button.free{margin-left:auto}
+main{max-width:1180px;margin:-38px auto 0;padding:0 16px 40px}
+#sim{display:grid;gap:16px;grid-template-columns:340px 1fr}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 4px 14px rgba(20,50,80,.07)}
+h2{margin:0 0 12px;font-size:1.05rem;color:var(--navy)}
+label{display:block;font-size:.85rem;font-weight:600;margin:12px 0 4px}
+input[type=text],input[type=number],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;background:var(--bg);color:var(--ink)}
+input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 45%,transparent);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+button{font:inherit;font-weight:600;border:0;border-radius:9px;padding:10px 14px;cursor:pointer;background:var(--sky);color:var(--navy);transition:.15s}
+button:hover:not(:disabled){filter:brightness(.95)}button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--blue);color:#fff}
+.err{color:var(--red);font-size:.85rem;min-height:1.2em;margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--sky);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-size:1.5rem;color:var(--navy);line-height:1.2}.stat span{font-size:.78rem;color:var(--mute)}
+.canvas-wrap{width:100%;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+canvas{display:block;width:100%}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.ctrl .sl{flex:1 1 100%;display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--mute)}
+.ctrl .sl input{flex:1;accent-color:var(--blue)}
+.ctrl .spd{margin:0 0 0 auto;display:flex;align-items:center;gap:8px;font-weight:500}.ctrl .spd input{width:100px}
+.seq{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0;padding:0;list-style:none}
+.seq li{background:var(--sky);color:var(--navy);border-radius:999px;padding:3px 11px;font-weight:600;font-size:.9rem;cursor:pointer}
+.seq li.on{background:var(--blue);color:#fff}.seq li.start{background:var(--navy);color:var(--card)}
+.seq li.turn{outline:2px dashed var(--amber);outline-offset:1px}
+.tw{overflow:auto;max-height:260px;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line)}
+th{position:sticky;top:0;background:var(--sky);color:var(--navy)}th:first-child,td:first-child{text-align:left}
+tbody tr{cursor:pointer}tr.on td{background:color-mix(in srgb,var(--blue) 18%,transparent);font-weight:600}
+.cmp{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:70px 1fr 56px;align-items:center;gap:10px;font-size:.88rem}
+.bar i{display:block;height:14px;border-radius:7px;background:var(--line);overflow:hidden}.bar i s{display:block;height:100%;background:#8db5db;border-radius:7px;transition:width .4s}
+.bar.me i s{background:var(--blue)}.bar.me{font-weight:700;color:var(--navy)}.bar span:last-child{text-align:right}
+.pro{color:var(--green);font-weight:700}.con{color:var(--red);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{background:var(--blue);color:#fff;border-radius:999px;padding:5px 12px;font-size:.84rem;font-weight:600}.chip.low{background:#6a7f94}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stack{display:grid;gap:16px;align-content:start}
+.story{border-left:5px solid var(--blue)}
+.story p{margin:6px 0}.story .q{font-weight:600;color:var(--navy)}
+.nar{background:var(--sky);border-radius:10px;padding:12px 14px;min-height:64px;font-size:1rem}
+.nar small{display:block;color:var(--mute);margin-top:4px}
+.lhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.lhead button{padding:6px 12px;font-size:.85rem}
+#logic ol{margin:12px 0 0;padding-left:0;list-style:none;counter-reset:l;font-size:.93rem}
+#logic li{counter-increment:l;padding:7px 10px 7px 38px;position:relative;border-radius:8px;color:var(--mute);transition:.2s}
+#logic li::before{content:counter(l);position:absolute;left:10px;top:7px;width:20px;height:20px;border-radius:50%;background:var(--line);color:var(--ink);font-size:.75rem;font-weight:700;display:grid;place-items:center}
+#logic li.on{background:var(--sky);color:var(--ink);font-weight:600}#logic li.on::before{background:var(--blue);color:#fff}
+.hide{display:none!important}
+#theory{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+#theory ul{margin:0;padding-left:20px}#theory li{margin:6px 0}
+.elev{grid-column:1/-1}
+.cmp2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cmp2>div{background:var(--sky);border-radius:10px;padding:12px 14px}
+body[data-mode=free] .exonly{display:none!important}
+#report{display:none}
+@media(max-width:900px){#sim,#theory{grid-template-columns:1fr}.cols{grid-template-columns:1fr}nav button.free{margin-left:0}}
+@media(max-width:520px){.stats{grid-template-columns:1fr 1fr}.ctrl .spd{margin:0}.cmp2{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{
+  @page{margin:14mm}
+  body{background:#fff;color:#000}header nav,header p,.ctrl,.noprint,#theory,aside .card:first-child,.tw{display:none!important}
+  header{background:none;color:#000;padding:0 0 8px;border-bottom:2px solid #1b3f63}
+  main{margin:10px 0 0;padding:0}#sim{display:block}.card{box-shadow:none;break-inside:avoid;margin-bottom:12px}
+  .stack{display:block}.cols{display:block}#report{display:block;break-inside:avoid}
+  #report table{font-size:.85rem}#report th{position:static}
+}
+</style>
+</head>
+<body data-mode="e1">
+<header><div class="w">
+<h1>Simulador del algoritmo LOOK</h1>
+<p>Planificación de disco en Sistemas Operativos. Recorre cada ejercicio paso a paso y explica la lógica en vivo.</p>
+<nav id="nav" aria-label="Secciones">
+<button data-m="theory">Teoría</button>
+<button data-m="e1">Ejercicio 1</button>
+<button data-m="e2">Ejercicio 2</button>
+<button data-m="e3">Ejercicio 3</button>
+<button data-m="free" class="free">Modo libre</button>
+</nav>
+</div></header>
+
+<main>
+<section id="theory" class="hide">
+<div class="card elev">
+<h2>La metáfora del ascensor</h2>
+<p>Imagina un ascensor en un edificio. Si sube y hay personas esperando en los pisos 3, 5 y 8, el ascensor sube atendiendo esas paradas. LOOK es una versión optimizada de SCAN, conocido como el «algoritmo del ascensor».</p>
+<div class="cmp2">
+<div><b>SCAN</b><br>El cabezal se mueve en una dirección atendiendo peticiones y llega hasta el extremo físico del disco (cilindro 0 o 199), aunque ya no haya más solicitudes en ese sentido.</div>
+<div><b>LOOK</b><br>El cabezal «mira» hacia adelante. Al atender la última solicitud en la dirección actual, invierte el sentido de inmediato, sin ir hasta el borde del disco.</div>
+</div>
+</div>
+<div class="card"><h2>Conceptos clave</h2><ul>
+<li><b>Cabezal y pistas:</b> los datos están en pistas concéntricas numeradas de 0 a N. El cabezal se desplaza físicamente hasta la pista solicitada.</li>
+<li><b>Tiempo de búsqueda (seek time):</b> lo que tarda el cabezal en moverse entre pistas. LOOK busca minimizar la distancia total recorrida.</li>
+<li><b>Dirección inicial:</b> para resolver cualquier ejercicio hay que saber si el cabezal empieza hacia pistas mayores o menores.</li></ul></div>
+<div class="card"><h2>Ventajas y desventajas</h2><ul>
+<li><span class="pro">Ventaja:</span> más eficiente que FCFS y SSTF, y con menos movimiento que SCAN.</li>
+<li><span class="con">Desventaja:</span> implementación algo más compleja que FCFS o SSTF.</li>
+<li>Equidad media con las peticiones de los extremos opuestos.</li></ul>
+<h2 style="margin-top:16px">Equidad</h2>
+<div class="chips"><span class="chip">↑ FCFS: Máxima</span><span class="chip">↑ C-LOOK: Alta</span><span class="chip">↑ C-SCAN: Alta</span><span class="chip">↑ LOOK: Media</span><span class="chip">↑ SCAN: Media</span><span class="chip low">↓ SSTF: Baja</span></div></div>
+</section>
+
+<div id="sim">
+<aside class="stack">
+<section class="card story exonly" id="story"></section>
+<section class="card">
+<h2>Parámetros</h2>
+<label for="queue">Cola de solicitudes (pistas separadas por coma)</label>
+<input type="text" id="queue" inputmode="numeric" autocomplete="off">
+<div class="row">
+<div><label for="head">Posición inicial</label><input id="head" type="number" min="0"></div>
+<div><label for="max">Última pista</label><input id="max" type="number" min="1"></div>
+</div>
+<label for="dir">Dirección inicial</label>
+<select id="dir"><option value="up">Hacia pistas mayores (↑)</option><option value="down">Hacia pistas menores (↓)</option></select>
+<div class="err" id="err" role="alert"></div>
+<div class="btns">
+<button class="primary" id="run">Calcular</button>
+<button id="ex2r" type="button">Aleatorio</button>
+<button id="rest" class="exonly" type="button">Restaurar ejercicio</button>
+</div>
+</section>
+</aside>
+
+<div class="stack">
+<section class="card">
+<h2>Movimiento del cabezal</h2>
+<div class="stats">
+<div class="stat"><b id="sTotal">–</b><span>Distancia total (pistas)</span></div>
+<div class="stat"><b id="sAcc">–</b><span>Recorrido hasta este paso</span></div>
+<div class="stat"><b id="sNow">–</b><span>Paso actual</span></div>
+</div>
+<div class="canvas-wrap"><canvas id="cv" aria-label="Gráfico del movimiento del cabezal" role="img"></canvas></div>
+<div class="ctrl">
+<div class="sl"><span>Inicio</span><input type="range" id="sl" min="0" max="1" value="0" aria-label="Paso de la simulación"><span>Fin</span></div>
+<button id="reset">⏮ Inicio</button>
+<button id="prev">◀ Anterior</button>
+<button class="primary" id="next">Siguiente ▶</button>
+<button id="end">Final ⏭</button>
+<button id="play">▶ Auto</button>
+<button id="pdf" class="noprint">⤓ Exportar PDF</button>
+<label class="spd" for="spd">Velocidad <input id="spd" type="range" min="1" max="5" value="3"></label>
+</div>
+<p class="noprint" style="font-size:.8rem;color:var(--mute);margin:8px 0 0">Atajos: ← → para avanzar o retroceder, espacio para reproducir.</p>
+</section>
+
+<section class="card">
+<div class="lhead"><h2 style="margin:0">Explicación del paso</h2><button id="tlogic" class="noprint">Ocultar lógica</button></div>
+<div class="nar" id="nar" style="margin-top:12px"></div>
+<div id="logic"><ol id="lines">
+<li>Ubicar el cabezal y la dirección inicial.</li>
+<li>Separar las solicitudes: las que están adelante y las que quedan atrás.</li>
+<li>Atender las de adelante en orden, hasta la última (sin llegar al extremo).</li>
+<li>Invertir la dirección en la última solicitud atendida.</li>
+<li>Atender las solicitudes restantes en sentido contrario.</li>
+<li>Sumar |destino − origen| de cada movimiento: distancia total.</li>
+</ol></div>
+</section>
+
+<section class="card">
+<h2>Secuencia de atención</h2>
+<ol class="seq" id="seq"></ol>
+<p style="font-size:.82rem;color:var(--mute);margin:10px 0 0">Haz clic en una pista para saltar a ese paso. Borde punteado: punto de inversión.</p>
+</section>
+
+<div class="cols">
+<section class="card"><h2>Detalle por paso</h2><div class="tw"><table><thead><tr><th>Paso</th><th>Desde</th><th>Hasta</th><th>Dist.</th><th>Acum.</th></tr></thead><tbody id="tb"></tbody></table></div></section>
+<section class="card"><h2>Comparación con otros algoritmos</h2><div class="cmp" id="cmp"></div>
+<p style="font-size:.82rem;color:var(--mute);margin:10px 0 0">Mismos datos. SCAN y C-SCAN recorren hasta los extremos del disco.</p></section>
+</div>
+
+<section class="card" id="report"></section>
+</div>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d');
+const EX={
+ e1:{t:'Ejercicio 1 · Cabezal hacia pistas mayores',q:[98,183,37,122,14,124,65,67],h:53,max:199,dir:'up',txt:'Cola de solicitudes: 98, 183, 37, 122, 14, 124, 65, 67. El cabezal está en la pista 53 y se mueve hacia pistas mayores.'},
+ e2:{t:'Ejercicio 2 · Misma cola, otra dirección',q:[98,183,37,122,14,124,65,67],h:53,max:199,dir:'down',txt:'Los mismos datos del ejercicio 1, pero el cabezal se mueve hacia pistas menores. Compara cómo cambia la distancia total.'},
+ e3:{t:'Ejercicio 3 · Cola distinta',q:[82,170,43,140,24,16,190],h:50,max:199,dir:'up',txt:'Cola de solicitudes: 82, 170, 43, 140, 24, 16, 190. El cabezal está en la pista 50 y se mueve hacia pistas mayores.'}
+};
+let S=null,shown=0,timer=null,anim=null,mode='e1';
+
+function runAlg(alg,q,h,dir,max){
+  if(dir==='down'){const m=t=>max-t;return runAlg(alg,q.map(m),m(h),'up',max).map(m)}
+  const up=q.filter(x=>x>=h).sort((a,b)=>a-b),lo=q.filter(x=>x<h).sort((a,b)=>b-a),loAsc=[...lo].reverse();
+  switch(alg){
+    case 'FCFS':return [...q];
+    case 'SSTF':{let r=[],p=[...q],c=h;while(p.length){let i=0;p.forEach((x,k)=>{if(Math.abs(x-c)<Math.abs(p[i]-c))i=k});c=p.splice(i,1)[0];r.push(c)}return r}
+    case 'SCAN':return [...up,max,...lo];
+    case 'C-SCAN':return [...up,max,0,...loAsc];
+    case 'LOOK':return [...up,...lo];
+    case 'C-LOOK':return [...up,...loAsc];
+  }
+}
+const dist=(h,p)=>p.reduce((a,x,i)=>a+Math.abs(x-(i?p[i-1]:h)),0);
+const arrow=d=>d==='up'?'mayores ↑':'menores ↓';
+
+function simulate(){
+  const err=$('err');err.textContent='';
+  const raw=$('queue').value.split(/[\s,;]+/).filter(Boolean),q=raw.map(Number),h=Number($('head').value),max=Number($('max').value);
+  if(!raw.length)return err.textContent='Ingresa al menos una solicitud, por ejemplo: 98, 183, 37.',false;
+  if(q.some(x=>!Number.isInteger(x)))return err.textContent='La cola solo admite números enteros separados por coma.',false;
+  if(!Number.isInteger(max)||max<1)return err.textContent='La última pista debe ser un entero mayor que 0.',false;
+  if(!Number.isInteger(h)||h<0||h>max)return err.textContent=`La posición inicial debe estar entre 0 y ${max}.`,false;
+  if(q.some(x=>x<0||x>max))return err.textContent=`Todas las solicitudes deben estar entre 0 y ${max}.`,false;
+  const dir=$('dir').value,order=runAlg('LOOK',q,h,dir,max),path=[h,...order];
+  const steps=order.map((t,i)=>({from:path[i],to:t,d:Math.abs(t-path[i])}));
+  let acc=0;steps.forEach(s=>s.acc=acc+=s.d);
+  let turn=-1,sg=0;steps.forEach((s,i)=>{const g=Math.sign(s.to-s.from);if(g&&sg&&g!==sg&&turn<0)turn=i;if(g)sg=g});
+  const e0=EX[mode];S={q,h,max,dir,order,path,steps,turn,total:acc,n:order.length,custom:!!e0&&(q.join()!==e0.q.join()||h!==e0.h||max!==e0.max||dir!==e0.dir)};
+  if($('note'))$('note').textContent=S.custom?'Estás usando datos modificados. Usa «Restaurar ejercicio» para volver a los originales.':'';
+  stop();shown=0;$('sTotal').textContent=acc;$('sl').max=S.n;
+  $('seq').innerHTML=`<li class="start" data-i="0">${h} (inicio)</li>`+order.map((t,i)=>`<li data-i="${i+1}" class="${i+1===turn?'turn':''}">${t}</li>`).join('');
+  $('tb').innerHTML=steps.map((s,i)=>`<tr data-i="${i+1}"><td>${i+1}</td><td>${s.from}</td><td>${s.to}</td><td>${s.d}</td><td>${s.acc}</td></tr>`).join('');
+  const algs=['FCFS','SSTF','SCAN','C-SCAN','LOOK','C-LOOK'].map(a=>({a,d:dist(h,runAlg(a,q,h,dir,max))})),mx=Math.max(...algs.map(x=>x.d))||1;
+  S.algs=algs;
+  $('cmp').innerHTML=algs.map(x=>`<div class="bar ${x.a==='LOOK'?'me':''}"><span>${x.a}</span><i><s style="width:${x.d/mx*100}%"></s></i><span>${x.d}</span></div>`).join('');
+  update();return true;
+}
+
+/* Narración por paso */
+function narrate(k){
+  if(k===0)return [`Estado inicial: el cabezal está en la pista <b>${S.h}</b> y se mueve hacia pistas ${arrow(S.dir)}. Cola pendiente: ${S.q.join(', ')}.`,'Paso 0'];
+  const s=S.steps[k-1],sube=s.to>s.from;
+  let t=`El cabezal ${s.d?(sube?'sube':'baja'):'permanece'} de <b>${s.from}</b> a <b>${s.to}</b>: |${s.to} − ${s.from}| = <b>${s.d}</b> pistas. Acumulado: <b>${s.acc}</b>.`,x='';
+  if(k===S.turn)x=`Es la última solicitud en este sentido: LOOK <b>invierte aquí</b>. SCAN habría seguido hasta la pista ${sube?S.max:0}.`;
+  else if(k===S.n)x=`Cola vacía. Distancia total = ${S.steps.map(z=>z.d).join(' + ')} = <b>${S.total}</b> pistas.`;
+  return [t+(x?'<small>'+x+'</small>':''),`Paso ${k} de ${S.n}`];
+}
+function activeLine(k){return k===0?0:k===S.n?5:S.turn<0||k<S.turn?2:k===S.turn?3:4}
+
+function draw(){
+  const w=cv.parentElement.clientWidth||600,n=S?S.n:5,hgt=Math.max(300,Math.min(520,90+n*38)),dpr=window.devicePixelRatio||1;
+  cv.width=w*dpr;cv.height=hgt*dpr;cv.style.height=hgt+'px';ctx.setTransform(dpr,0,0,dpr,0,0);
+  const cs=getComputedStyle(document.documentElement),C=k=>cs.getPropertyValue(k).trim();
+  ctx.clearRect(0,0,w,hgt);ctx.font='12px "Segoe UI",sans-serif';
+  if(!S)return;
+  const L=34,R=34,T=44,B=24,max=S.max,X=t=>L+t/max*(w-L-R),Y=i=>T+i*(hgt-T-B)/Math.max(n,1);
+  ctx.strokeStyle=C('--line');ctx.fillStyle=C('--mute');ctx.textAlign='center';ctx.lineWidth=1;
+  const tick=max<=50?5:max<=120?10:max<=300?25:Math.pow(10,Math.floor(Math.log10(max)));
+  for(let t=0;t<=max;t+=tick){ctx.beginPath();ctx.moveTo(X(t),T-8);ctx.lineTo(X(t),hgt-B);ctx.stroke();ctx.fillText(t,X(t),T-16)}
+  ctx.textAlign='left';ctx.fillText('Pistas →',4,14);
+  const full=Math.floor(shown),fr=shown-full,pts=S.path.map((t,i)=>[X(t),Y(i)]);
+  ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.strokeStyle=C('--blue');ctx.beginPath();ctx.moveTo(...pts[0]);
+  for(let i=1;i<=full&&i<pts.length;i++)ctx.lineTo(...pts[i]);
+  let cur=pts[Math.min(full,pts.length-1)];
+  if(fr>0&&full<pts.length-1){const a=pts[full],b=pts[full+1];cur=[a[0]+(b[0]-a[0])*fr,a[1]+(b[1]-a[1])*fr];ctx.lineTo(...cur)}
+  ctx.stroke();
+  pts.forEach((p,i)=>{
+    const done=i<=full,isTurn=i===S.turn&&S.turn>0;
+    ctx.beginPath();ctx.arc(p[0],p[1],i===0?6:5,0,7);
+    ctx.fillStyle=i===0?C('--navy'):done?C('--card'):C('--line');ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle=isTurn&&done?C('--amber'):done?C('--blue'):C('--mute');ctx.stroke();
+    ctx.fillStyle=done?C('--ink'):C('--mute');const r=p[0]>w-60;ctx.textAlign=r?'right':'left';
+    ctx.fillText(S.path[i],p[0]+(r?-10:10),p[1]+4);
+  });
+  ctx.beginPath();ctx.arc(cur[0],cur[1],9,0,7);ctx.fillStyle=C('--red');ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle=C('--card');ctx.stroke();
+}
+
+function update(){
+  const k=Math.round(shown);
+  document.querySelectorAll('#seq li').forEach(e=>e.classList.toggle('on',+e.dataset.i===k&&k>0));
+  document.querySelectorAll('#tb tr').forEach(e=>{const on=+e.dataset.i===k;e.classList.toggle('on',on);if(on&&!printing){const w=e.closest('.tw');w.scrollTop+=e.getBoundingClientRect().top-w.getBoundingClientRect().top-w.clientHeight/2}});
+  const [t,l]=narrate(k);$('nar').innerHTML=t;$('nar').dataset.l=l;
+  document.querySelectorAll('#lines li').forEach((e,i)=>e.classList.toggle('on',i===activeLine(k)));
+  $('sNow').textContent=`${k} / ${S.n}`;$('sAcc').textContent=k?S.steps[k-1].acc:0;
+  $('sl').value=k;
+  $('prev').disabled=$('reset').disabled=k<=0;$('next').disabled=$('end').disabled=k>=S.n;
+  draw();
+}
+
+function goTo(target,cb){
+  cancelAnimationFrame(anim);const from=shown,t0=performance.now(),dur=Math.max(150,Math.abs(target-from)*(900-160*$('spd').value));
+  const f=t=>{const p=Math.min(1,(t-t0)/dur);shown=from+(target-from)*p;update();if(p<1)anim=requestAnimationFrame(f);else{shown=target;update();cb&&cb()}};
+  anim=requestAnimationFrame(f);
+}
+function stop(){timer=null;cancelAnimationFrame(anim);$('play').textContent='▶ Auto'}
+function loop(){if(!timer)return;if(Math.round(shown)>=S.n)return stop();goTo(Math.floor(shown)+1,loop)}
+function toggle(){if(timer)return stop();if(shown>=S.n)shown=0;timer=1;$('play').textContent='⏸ Pausar';loop()}
+const step=d=>{stop();goTo(Math.max(0,Math.min(S.n,Math.round(shown)+d)))};
+$('play').onclick=toggle;$('next').onclick=()=>step(1);$('prev').onclick=()=>step(-1);
+$('reset').onclick=()=>{stop();goTo(0)};$('end').onclick=()=>{stop();goTo(S.n)};
+$('sl').oninput=e=>{stop();cancelAnimationFrame(anim);shown=+e.target.value;update()};
+document.querySelectorAll('#seq,#tb').forEach(el=>el.addEventListener('click',e=>{const i=e.target.closest('[data-i]');if(i&&S){stop();goTo(+i.dataset.i)}}));
+addEventListener('keydown',e=>{
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)&&e.target.type!=='range')return;
+  if($('sim').classList.contains('hide')||!S)return;
+  if(e.key==='ArrowRight'){e.preventDefault();step(1)}else if(e.key==='ArrowLeft'){e.preventDefault();step(-1)}
+  else if(e.key===' '&&e.target.tagName!=='BUTTON'){e.preventDefault();toggle()}
+});
+
+/* Lógica visible / oculta */
+$('tlogic').onclick=()=>{const h=$('logic').classList.toggle('hide');$('tlogic').textContent=h?'Mostrar lógica':'Ocultar lógica'};
+
+/* Modos */
+function setMode(m){
+  mode=m;stop();document.body.dataset.mode=m;
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $('theory').classList.toggle('hide',m!=='theory');$('sim').classList.toggle('hide',m==='theory');
+  if(m==='theory')return;
+  const free=m==='free';
+  if(!free){const e=EX[m];$('queue').value=e.q.join(', ');$('head').value=e.h;$('max').value=e.max;$('dir').value=e.dir;
+    $('story').innerHTML=`<h2>${e.t}</h2><p>${e.txt}</p><p class="q">¿Cuál es la secuencia de atención y la distancia total?</p><p id="note" style="color:var(--amber);font-weight:600;margin:6px 0 0"></p>`}
+  else if(!$('queue').value){$('queue').value=EX.e1.q.join(', ');$('head').value=53;$('max').value=199}
+  simulate();
+}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+$('run').onclick=simulate;$('rest').onclick=()=>setMode(mode);
+$('ex2r').onclick=()=>{const max=199,n=6+Math.floor(Math.random()*5),s=new Set();while(s.size<n)s.add(Math.floor(Math.random()*(max+1)));
+  $('queue').value=[...s].join(', ');$('head').value=Math.floor(Math.random()*(max+1));$('max').value=max;$('dir').value=Math.random()<.5?'up':'down';simulate()};
+['queue','head','max','dir'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')simulate()}));
+
+/* Exportar PDF (diálogo de impresión → Guardar como PDF) */
+let printing=false,saved=0;
+function buildReport(){
+  const title=(mode==='free'?'Modo libre':EX[mode].t)+(S.custom?' (datos modificados)':'');
+  $('report').innerHTML=`<h2>Resolución paso a paso</h2>
+  <p><b>${title}</b><br>Cola: ${S.q.join(', ')} · Cabezal: ${S.h} · Dirección: pistas ${arrow(S.dir)} · Última pista: ${S.max}</p>
+  <p><b>Secuencia de atención:</b> ${S.h} → ${S.order.join(' → ')}</p>
+  <table><thead><tr><th>Paso</th><th>Desde</th><th>Hasta</th><th>Dist.</th><th>Acum.</th></tr></thead><tbody>${S.steps.map((s,i)=>`<tr><td>${i+1}</td><td>${s.from}</td><td>${s.to}</td><td>${s.d}</td><td>${s.acc}</td></tr>`).join('')}</tbody></table>
+  <p><b>Distancia total:</b> ${S.steps.map(z=>z.d).join(' + ')} = <b>${S.total} pistas</b> (promedio ${(S.total/S.n).toFixed(1)} por solicitud).</p>
+  <p><b>Comparación:</b> ${S.algs.map(a=>`${a.a}: ${a.d}`).join(' · ')}</p>`;
+}
+$('pdf').onclick=()=>{
+  stop();buildReport();document.title=`LOOK - ${mode==='free'?'Modo libre':'Ejercicio '+mode[1]}`;window.print()
+};
+addEventListener('beforeprint',()=>{if(!S)return;printing=true;saved=shown;shown=S.n;update()});
+addEventListener('afterprint',()=>{printing=false;if(S){shown=saved;update()}document.title='Simulador del algoritmo LOOK · Planificación de discos'});
+addEventListener('resize',()=>{if(S)draw()});
+setMode('e1');
+</script>
+</body>
+</html>
